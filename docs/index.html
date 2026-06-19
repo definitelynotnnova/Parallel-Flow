@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nimbus Parallel Flow — API Reference</title>
+<meta name="description" content="API reference for Nimbus Parallel Flow, a parallel processing library for Roblox.">
+<style>
+:root{
+  --bg:#cfd2d6;
+  --text:#161719;
+  --muted:#4d5054;
+  --link:#0f4c81;
+  --border:#9a9ea3;
+  --rule:#8a8e93;
+  --code-bg:#e4e6e8;
+  --th-bg:#bcc0c4;
+  --sidebar-w:248px;
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top:16px;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px;
+  line-height:1.6;
+}
+.layout{display:flex;align-items:flex-start;max-width:1180px;margin:0 auto;}
+
+.sidebar{
+  width:var(--sidebar-w);flex:0 0 var(--sidebar-w);
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  padding:24px 16px 48px;
+  border-right:1px solid var(--rule);
+}
+.sidebar .head{font-weight:700;font-size:14px;margin:0 0 2px;}
+.sidebar .sub{font-size:12px;color:var(--muted);margin:0 0 18px;}
+.sidebar nav{display:flex;flex-direction:column;}
+.sidebar a{color:var(--text);text-decoration:none;font-size:13px;padding:3px 6px;border-left:2px solid transparent;}
+.sidebar a:hover{text-decoration:underline;}
+.sidebar a:target{}
+.sidebar .grp{margin:16px 0 4px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.03em;}
+
+.content{flex:1 1 auto;min-width:0;max-width:840px;padding:28px 44px 90px;}
+
+h1{font-size:24px;margin:0 0 2px;font-weight:700;}
+.tagline{color:var(--muted);font-size:14px;margin:0 0 26px;}
+h2{font-size:19px;font-weight:700;margin:40px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--rule);}
+h3{font-size:15px;font-weight:700;margin:24px 0 6px;}
+h3.api{margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:700;font-size:15px;}
+h4{font-size:14px;font-weight:700;margin:18px 0 4px;}
+p,li{font-size:15px;}
+.ret{color:var(--muted);font-size:13.5px;margin:0 0 8px;}
+a{color:var(--link);text-decoration:none;}
+a:hover{text-decoration:underline;}
+ul,ol{padding-left:22px;}
+li{margin:2px 0;}
+
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:90%;}
+p code,li code,td code,.ret code{background:var(--code-bg);padding:.1em .35em;border:1px solid var(--border);}
+pre{
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  padding:12px 14px;
+  margin:12px 0;
+  overflow-x:auto;
+  font-size:13px;
+  line-height:1.5;
+}
+pre code{font-size:13px;}
+
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px;}
+caption{caption-side:top;text-align:left;font-weight:700;font-size:14px;margin-bottom:4px;}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top;}
+th{background:var(--th-bg);font-weight:700;}
+.num td:not(:first-child),.num th:not(:first-child){text-align:right;}
+.scroll{overflow-x:auto;}
+
+footer{margin-top:48px;padding-top:14px;border-top:1px solid var(--rule);color:var(--muted);font-size:13px;}
+
+@media (max-width:880px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static;width:100%;height:auto;border-right:none;border-bottom:1px solid var(--rule);}
+  .sidebar nav{flex-flow:row wrap;}
+  .sidebar a{padding:3px 10px 3px 0;}
+  .content{padding:22px 18px 70px;max-width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <p class="head">Nimbus Parallel Flow</p>
+  <p class="sub">API Reference · V20</p>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#how-it-works">How it works</a>
+
+    <span class="grp">GETTING STARTED</span>
+    <a href="#installation">Installation</a>
+    <a href="#quickstart">Quickstart</a>
+    <a href="#concepts">Pools and workers</a>
+
+    <span class="grp">API</span>
+    <a href="#createpool">createPool</a>
+    <a href="#configuration">Configuration</a>
+    <a href="#running-work">Running work</a>
+    <a href="#binary">Binary and shared paths</a>
+    <a href="#async">Async and submit</a>
+    <a href="#futures">Futures</a>
+    <a href="#pool-info">Pool info and telemetry</a>
+    <a href="#errors">Error handling</a>
+    <a href="#types">Supported types</a>
+
+    <span class="grp">REFERENCE</span>
+    <a href="#benchmarks">Benchmarks</a>
+    <a href="#notes">Notes and limits</a>
+  </nav>
+</aside>
+
+<main class="content">
+
+  <h1>Nimbus Parallel Flow</h1>
+  <p class="tagline">A parallel processing library for Roblox. API reference, version V20.</p>
+
+  <h2 id="overview">Overview</h2>
+  <p>
+    The library distributes work across worker <code>Actor</code>s, runs it in parallel, and returns
+    the results in order. Actor messaging, binary serialization, scheduling and thread
+    synchronization are handled internally. A worker is a <code>ModuleScript</code> returning a
+    function, applied once per element of the input.
+  </p>
+  <p>
+    The sequential-versus-parallel decision is made at runtime from a measured cost model: small
+    inputs run sequentially, because the round-trip cost of crossing the actor boundary exceeds the
+    compute; larger inputs are chunked across the pool.
+  </p>
+<pre><code>local ParallelFlow = require(game.ReplicatedStorage.ParallelFlow)
+
+local pool = ParallelFlow.createPool({ size = 8 })
+local results = pool:map({ 1, 2, 3, 4 }, MyWorker)</code></pre>
+
+  <h2 id="how-it-works">How it works</h2>
+  <p>
+    Data is serialized into a <code>buffer</code> before crossing the actor boundary and decoded on
+    the worker side. Moving a buffer between actors is cheaper for the engine than moving structured
+    tables, so the serializer keeps encode and decode cost low: per-type fast paths, buffer reuse
+    through a re-entrant free-list, and binary paths that skip serialization on the result entirely.
+  </p>
+  <p>
+    Two runtime measurements drive every <code>map</code>: the per-element cost of the worker,
+    micro-calibrated over a small sample, and the pool's pure round-trip latency, measured with a
+    calibration round trip when the pool starts. If the compute hides under the round-trip floor,
+    the work runs sequentially; otherwise it is chunked across the workers.
+  </p>
+
+  <h2 id="installation">Installation</h2>
+  <p>The library ships as a single assembled package. There are no scripts to place individually and no internal structure to assemble.</p>
+  <ol>
+    <li>Obtain the package (the Creator Store model or the <code>.rbxm</code> file).</li>
+    <li>Insert it into <code>ReplicatedStorage</code>. It contains the serializer, the type codecs and the engine.</li>
+    <li>Require it where needed:</li>
+  </ol>
+<pre><code>local ParallelFlow = require(game.ReplicatedStorage.ParallelFlow)</code></pre>
+  <p>With Rojo or Wally, point the dependency at <code>ReplicatedStorage.ParallelFlow</code>.</p>
+  <p>
+    The library runs on both the server and the client. <code>size</code> sets how many worker
+    Actors the pool creates, and <code>createPool</code> clamps it to 3 on the client and 64 on the
+    server. How many of those Actors actually run at the same time is decided by the Roblox engine,
+    not the library: it schedules them across a small pool of worker threads whose count depends on
+    the environment and is not guaranteed. In practice this ceiling is well below the Actor cap,
+    especially in a live game. The same config works on both sides; the effective parallelism
+    differs. See <a href="#notes">Notes and limits</a>.
+  </p>
+
+  <h2 id="quickstart">Quickstart</h2>
+
+  <h3>1. Write a worker</h3>
+  <p>A worker is a <code>ModuleScript</code> that returns a function. The pool calls it once per element. It runs inside an isolated actor and does not share state with the rest of the game while it executes.</p>
+<pre><code>-- Square.luau
+return function(value)
+    return value * value
+end</code></pre>
+
+  <h3>2. Create a pool</h3>
+  <p>Create the pool once and reuse it. Creating a pool spawns the workers and runs a short calibration, so it is not done per frame.</p>
+<pre><code>local ParallelFlow = require(game.ReplicatedStorage.ParallelFlow)
+local pool = ParallelFlow.createPool({ size = 8 })</code></pre>
+
+  <h3>3. Map over data</h3>
+  <p><code>map</code> runs the worker over the list and returns the results in order, plus an errors list (<code>nil</code> when nothing failed). It chooses sequential or parallel execution on its own.</p>
+<pre><code>local Square = game.ReplicatedStorage.Workers.Square
+
+local numbers = {}
+for i = 1, 5000 do numbers[i] = i end
+
+local results, errors = pool:map(numbers, Square)
+
+print(results[1])     --&gt; 1
+print(results[5000])  --&gt; 25000000</code></pre>
+
+  <h3>4. Many independent jobs</h3>
+  <p>When the work is a set of separate jobs rather than one list, use <code>submit</code>. It returns a Future immediately and coalesces all submissions made in the same frame into roughly one round trip per worker.</p>
+<pre><code>local futures = {}
+for i = 1, 100 do
+    futures[i] = pool:submit(Square, i)
+end
+
+local results = pool:awaitAll(futures)</code></pre>
+
+  <h3>5. Release the pool</h3>
+<pre><code>pool:destroy()</code></pre>
+
+  <h2 id="concepts">Pools and workers</h2>
+  <p>
+    A pool owns a set of worker actors and the scheduler that feeds them. It is meant to live across
+    many calls, so create it once and keep it. A worker is a plain <code>ModuleScript</code> returning
+    a function, applied once per element.
+  </p>
+  <p>
+    Parallelization pays off when the worker performs real per-element computation (physics, geometry,
+    CFrame transforms), which is where the cost of splitting work across threads is offset. For
+    trivial work the round trip dominates, and the adaptive scheduler runs it sequentially.
+  </p>
+
+  <h2 id="createpool">createPool</h2>
+  <h3 class="api">ParallelFlow.createPool(config?)</h3>
+  <p class="ret">Returns a Pool.</p>
+  <p>Spawns the workers, waits for each to bind its handlers, and runs a short latency calibration. The <code>config</code> table is optional; every field has a default.</p>
+<pre><code>local pool = ParallelFlow.createPool()             -- all defaults
+local pool = ParallelFlow.createPool({ size = 8 }) -- override what you need</code></pre>
+
+  <h2 id="configuration">Configuration</h2>
+<pre><code>ParallelFlow.createPool({
+    size                  = 4,          -- number of workers
+    timeout               = 10,         -- seconds before a job is dropped
+    adaptive              = true,       -- choose sequential or parallel automatically
+    loadBalanceFactor     = 1,          -- chunks per worker (&gt;1 improves balancing)
+    errorMode             = "continue", -- "continue" or "strict"
+    maxFrameMs            = 6,          -- per-frame dispatch time budget
+    maxChunkSize          = nil,        -- max elements per chunk (nil = no cap)
+    smallDatasetThreshold = 50,         -- sequential below this when adaptive is off
+    sharedTableThreshold  = 1000,       -- use a SharedTable above this size
+    nestedDataThreshold   = 10000,      -- SharedTable threshold for nested data
+    seedRoundTripMs       = 7,          -- initial round-trip estimate before calibration
+    calibrationSamples    = 16,         -- samples used for cost estimation
+    onError               = nil,        -- function(message) called on failures
+})</code></pre>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>size</code></td><td>4</td><td>Number of worker Actors the pool creates. Clamped to 3 on the client and 64 on the server. The actual parallelism is lower and set by the engine's worker-thread count, not by this value; see <a href="#notes">Notes and limits</a>.</td></tr>
+      <tr><td><code>timeout</code></td><td>10</td><td>Seconds before a job that has not returned is dropped and counted as timed out.</td></tr>
+      <tr><td><code>adaptive</code></td><td>true</td><td>When true, the sequential-versus-parallel choice comes from the measured cost model. When false, it uses <code>smallDatasetThreshold</code>.</td></tr>
+      <tr><td><code>loadBalanceFactor</code></td><td>1</td><td>Chunks emitted per worker. Above 1 produces more, smaller chunks: better balancing under uneven work, at the cost of more round trips.</td></tr>
+      <tr><td><code>errorMode</code></td><td>"continue"</td><td><code>"continue"</code> collects per-element errors and returns partial results; <code>"strict"</code> raises on the first failed element.</td></tr>
+      <tr><td><code>maxFrameMs</code></td><td>6</td><td>Per-frame time budget for dispatching chunks. The loop yields when it exceeds this, so a large input does not stall a frame.</td></tr>
+      <tr><td><code>maxChunkSize</code></td><td>nil</td><td>Upper bound on elements per chunk. <code>nil</code> means no explicit cap.</td></tr>
+      <tr><td><code>smallDatasetThreshold</code></td><td>50</td><td>When <code>adaptive</code> is off, inputs smaller than this run sequentially.</td></tr>
+      <tr><td><code>sharedTableThreshold</code></td><td>1000</td><td>Inputs at or above this size may be passed through a <code>SharedTable</code> instead of copied per chunk.</td></tr>
+      <tr><td><code>nestedDataThreshold</code></td><td>10000</td><td>The <code>SharedTable</code> threshold used when elements are themselves tables.</td></tr>
+      <tr><td><code>seedRoundTripMs</code></td><td>7</td><td>Round-trip estimate used before, or if unavailable, the startup calibration.</td></tr>
+      <tr><td><code>calibrationSamples</code></td><td>16</td><td>Number of samples used to estimate per-element cost and the latency floor.</td></tr>
+      <tr><td><code>onError</code></td><td>nil</td><td>Called with a descriptive string when a job fails, times out, or a chunk is lost.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The two values that most affect behavior are <code>adaptive</code> (whether a given input is worth parallelizing at all) and <code>size</code> (the ceiling on speedup for inputs that are).</p>
+
+  <h2 id="running-work">Running work</h2>
+  <p>These methods apply a worker across an input and block until it finishes. For the non-blocking forms, see <a href="#async">Async and submit</a>.</p>
+
+  <h3 class="api">pool:map(list, module)</h3>
+  <p class="ret">Returns <code>results, errors</code>. Blocking.</p>
+  <p>Runs the worker over the list and returns the results in input order. <code>errors</code> is <code>nil</code> when nothing failed, otherwise a list of <code>{ index, message }</code>. Chooses sequential or parallel from the cost model (or <code>smallDatasetThreshold</code> when <code>adaptive</code> is off), and may route large or nested inputs through a <code>SharedTable</code> automatically.</p>
+
+  <h3 class="api">pool:Map(data, module)</h3>
+  <p class="ret">Returns results. Blocking.</p>
+  <p>Router that dispatches by data type: a <code>buffer</code> goes to <code>mapBuffer</code> (stride 8), a list of <code>Vector3</code> goes to <code>mapVector3</code>, any other list goes to <code>map</code>.</p>
+
+  <h3 class="api">pool:mapTables(list, module)</h3>
+  <p class="ret">Returns <code>results, errors</code>. Blocking.</p>
+  <p>Like <code>map</code>, but always parallel: it skips the sequential decision and the calibration step. Use it when the input is known to be large enough to parallelize.</p>
+
+  <h3 class="api">pool:dispatch(module, data)</h3>
+  <p class="ret">Returns the result. Blocking.</p>
+  <p>Runs the worker on a single value. For more than one value, prefer <code>map</code> (a collection) or <code>submit</code> (independent jobs), which are far cheaper per item.</p>
+
+  <h3 class="api">pool:filter(list, module)</h3>
+  <p class="ret">Returns the kept list. Blocking.</p>
+  <p>Runs the worker as a predicate and keeps the original elements whose result is truthy, preserving order.</p>
+
+  <h3 class="api">pool:Pipeline(data, { modA, modB, modC })</h3>
+  <p class="ret">Returns the final result. Blocking.</p>
+  <p>Runs each module in sequence, feeding the result of one stage into the next through <code>Map</code>. Each stage is parallelized on its own.</p>
+
+  <h2 id="binary">Binary and shared paths</h2>
+  <p>These hand the worker raw buffer memory instead of decoded values, avoiding serialization for tightly packed numeric data.</p>
+
+  <h3 class="api">pool:mapVector3(vectors, module)</h3>
+  <p class="ret">Returns results. Binary path.</p>
+  <p>Iterates a list of <code>Vector3</code>. Each vector is packed as three <code>f32</code> values (12 bytes). The worker receives <code>(buffer, offset)</code>:</p>
+<pre><code>-- worker
+return function(buf, offset)
+    local x = buffer.readf32(buf, offset)
+    local y = buffer.readf32(buf, offset + 4)
+    local z = buffer.readf32(buf, offset + 8)
+    return x + y + z
+end</code></pre>
+
+  <h3 class="api">pool:mapBuffer(data, stride, module)</h3>
+  <p class="ret">Returns results. Binary path.</p>
+  <p>Binary input, list output. <code>stride</code> is the byte size of one element. The worker receives <code>(buffer, offset)</code> and returns one value per element.</p>
+
+  <h3 class="api">pool:mapBufferOut(data, stride, outStride, module)</h3>
+  <p class="ret">Returns a buffer. Binary path.</p>
+  <p>Binary input and binary output, with no serialization on the result. The worker receives <code>(inBuffer, inOffset, outBuffer, outOffset)</code> and writes directly into the output buffer. This is the lowest-overhead path when both ends are numeric.</p>
+<pre><code>-- worker
+return function(inBuf, inOff, outBuf, outOff)
+    local v = buffer.readf32(inBuf, inOff)
+    buffer.writef32(outBuf, outOff, v * 2)
+end</code></pre>
+
+  <h3 class="api">pool:mapInto(list, sharedTable, module)</h3>
+  <p class="ret">Returns nothing. Shared path.</p>
+  <p>Writes each result into the <code>SharedTable</code> you pass, at the matching index. The target must be a <code>SharedTable</code>; a plain table is rejected, because writes to it would not survive crossing the actor boundary and would be silently lost.</p>
+
+  <h2 id="async">Async and submit</h2>
+
+  <h3 class="api">pool:submit(module, arg)</h3>
+  <p class="ret">Returns a Future.</p>
+  <p>Queues one job and returns a Future immediately. Submissions made within the same frame are buffered and coalesced: instead of one round trip per job, they are split across the workers and sent as roughly one message per worker. A loop of <code>dispatch</code> would instead pay a full round trip each.</p>
+<pre><code>local futures = {}
+for i = 1, 100 do
+    futures[i] = pool:submit(MyJob, i)
+end
+
+local results = pool:awaitAll(futures)</code></pre>
+
+  <h3 class="api">pool:awaitAll(futures)</h3>
+  <p class="ret">Returns the results list.</p>
+  <p>Waits for a list of Futures and returns their results in the same order.</p>
+
+  <h3>Async map variants</h3>
+  <p>Each returns a Future that resolves to the same value its blocking form would return.</p>
+<pre><code>local future = pool:mapAsync(list, module)
+local future = pool:mapTablesAsync(list, module)
+local future = pool:FilterAsync(list, module)
+local future = pool:PipelineAsync(data, steps)
+
+local results = future:Await()</code></pre>
+
+  <h2 id="futures">Futures</h2>
+  <p>A Future represents a job that has not finished yet. Every async method and <code>submit</code> returns one. Waiting is event-based, not polling: a thread parked in <code>Await</code> or <code>Wait</code> is resumed when the job settles or is cancelled.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Method</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>future:Await()</code></td><td>Yields until the job settles and returns its result (<code>nil</code> if cancelled or failed).</td></tr>
+      <tr><td><code>future:Wait()</code></td><td>Yields until the job settles, returns nothing.</td></tr>
+      <tr><td><code>future:OnComplete(fn)</code></td><td>Registers <code>fn(result, ok)</code> to run once the job finishes. Fires immediately if already settled.</td></tr>
+      <tr><td><code>future:Cancel()</code></td><td>Cancels the job. A result that arrives after cancellation is ignored.</td></tr>
+      <tr><td><code>future:IsCompleted()</code></td><td>True once the job has finished.</td></tr>
+      <tr><td><code>future:IsCancelled()</code></td><td>True if the job was cancelled.</td></tr>
+    </tbody>
+  </table>
+  </div>
+<pre><code>local future = pool:mapAsync(data, MyWorker)
+
+future:OnComplete(function(results, ok)
+    if ok then
+        print("done with", #results, "results")
+    end
+end)
+
+-- elsewhere, if the result is no longer needed
+future:Cancel()</code></pre>
+  <p>When a Future carries a failure, its <code>errors</code> field holds the same structured error list described in <a href="#errors">Error handling</a>.</p>
+
+  <h2 id="pool-info">Pool info and telemetry</h2>
+
+  <h3 class="api">pool:prewarm(module)</h3>
+  <p>Loads and caches the module on every worker so the first real call does not pay the require and synchronization cost. The map family calls this on its own the first time it sees a module, so explicit <code>prewarm</code> is only useful to move that one-time cost out of a latency-sensitive moment.</p>
+
+  <h3 class="api">pool:getSize() · pool:getFreeCount() · pool:isClientPool()</h3>
+<pre><code>pool:getSize()       -- number of workers
+pool:getFreeCount()  -- workers currently idle
+pool:isClientPool()  -- true if the pool runs on the client</code></pre>
+
+  <h3 class="api">pool:getStats()</h3>
+  <p>Returns a snapshot of the pool's current state and the values the cost model has learned. Cheap to call and safe to poll.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Field</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>size</code></td><td>Number of workers in the pool.</td></tr>
+      <tr><td><code>free</code></td><td>Workers idle at the moment of the call.</td></tr>
+      <tr><td><code>busy</code></td><td>Workers currently running a job (<code>size - free</code>).</td></tr>
+      <tr><td><code>queued</code></td><td>Threads waiting for a worker to free up.</td></tr>
+      <tr><td><code>dispatched</code></td><td>Total jobs sent since the pool was created.</td></tr>
+      <tr><td><code>completed</code></td><td>Jobs that returned successfully.</td></tr>
+      <tr><td><code>failed</code></td><td>Jobs that failed.</td></tr>
+      <tr><td><code>timedOut</code></td><td>Jobs dropped after exceeding <code>timeout</code>.</td></tr>
+      <tr><td><code>avgRoundTripMs</code></td><td>Smoothed round-trip time of completed jobs, including compute. Observability only.</td></tr>
+      <tr><td><code>latencyFloorMs</code></td><td>Measured pure round-trip floor, from the startup calibration. The value the scheduler uses to decide sequential versus parallel.</td></tr>
+      <tr><td><code>perWorker</code></td><td>A list of how many jobs each worker has handled, by index.</td></tr>
+      <tr><td><code>lastRunMs</code></td><td>A list of the last measured compute time per worker, read from the worker actors.</td></tr>
+      <tr><td><code>costModel</code></td><td>A map of module name to learned per-element cost, in milliseconds.</td></tr>
+    </tbody>
+  </table>
+  </div>
+<pre><code>local stats = pool:getStats()
+print(string.format("latency floor: %.2f ms", stats.latencyFloorMs))
+
+for moduleName, costMs in stats.costModel do
+    print(string.format("%s: %.4f ms/element", moduleName, costMs))
+end</code></pre>
+
+  <h3 class="api">pool:destroy()</h3>
+  <p>Releases the pool and everything it owns: cancels any Futures still waiting in the submit buffer, tears down the result event, and destroys all worker actors. After <code>destroy</code>, any call that needs a worker raises <code>"pool is destroyed"</code>. It is idempotent; calling it twice is harmless.</p>
+  <p>A pool is meant to live across many calls. Destroy it on the lifecycle boundary that owns it (system shutdown, player leaving), not after each batch. The cost to avoid is creating and destroying pools frequently, since each creation spawns actors and runs a calibration.</p>
+
+  <h2 id="errors">Error handling</h2>
+  <p>A worker can fail on a single element without taking down the rest of the batch. Each element runs under its own <code>pcall</code>, so one bad value produces one recorded error, not a lost chunk.</p>
+
+  <h3>Return shape</h3>
+  <p><code>map</code> and <code>mapTables</code> return <code>results, errors</code>. <code>results</code> holds one entry per input element, in order. <code>errors</code> is <code>nil</code> when nothing failed, otherwise a list of <code>{ index, message }</code>, where <code>index</code> is the position in the original input even when the work was chunked across workers.</p>
+
+  <h3>Continue mode (default)</h3>
+  <p>A failed element leaves <code>nil</code> in its slot in <code>results</code> and adds an entry to <code>errors</code>. The rest of the results stay intact.</p>
+<pre><code>local results, errors = pool:map(data, MyWorker)
+
+if errors then
+    for _, e in errors do
+        warn(string.format("element %d failed: %s", e.index, e.message))
+    end
+end</code></pre>
+
+  <h3>Strict mode</h3>
+  <p>The first failed element raises instead of being collected. Use it when one failure means the whole result is invalid.</p>
+<pre><code>local pool = ParallelFlow.createPool({ errorMode = "strict" })
+
+local ok, results = pcall(function()
+    return pool:map(data, MyWorker)
+end)</code></pre>
+
+  <h3>onError</h3>
+  <p><code>onError</code> receives a descriptive string for failures, timeouts and lost chunks. It is independent of <code>errorMode</code>: it still fires in continue mode as a logging side channel, and in strict mode it fires before the error is raised. The structured <code>{ index, message }</code> data lives on the <code>errors</code> return value, not here.</p>
+<pre><code>local pool = ParallelFlow.createPool({
+    onError = function(message)
+        warn("[pool] " .. message)
+    end,
+})</code></pre>
+
+  <h3>Futures and total failures</h3>
+  <p>For async methods and <code>submit</code>, a failure settles the Future rather than returning an errors list; its <code>errors</code> field carries the same entries and <code>Await</code> returns <code>nil</code>. A timeout or worker crash is different from an element error: the whole chunk is lost, reported through <code>onError</code>, leaving the affected slots empty.</p>
+
+  <h2 id="types">Supported types</h2>
+  <p>Data sent to and returned from a worker crosses the actor boundary, so it is serialized into a <code>buffer</code> and decoded on the other side, automatically and without annotation.</p>
+
+  <h3>Built-in</h3>
+  <p>Primitives and containers: <code>nil</code>, <code>boolean</code>, <code>number</code>, <code>string</code>, <code>buffer</code>, arrays, and maps. Numbers are tagged integer or float internally so integer-heavy data uses a tighter encoding; arrays and maps nest freely.</p>
+  <p>Roblox types: <code>Vector2</code>, <code>Vector3</code>, <code>CFrame</code>, <code>Color3</code>, <code>UDim</code>, <code>UDim2</code>, <code>Rect</code>, <code>Ray</code>, <code>Region3</code>, <code>NumberRange</code>, <code>BrickColor</code>, <code>Enum</code>, <code>DateTime</code>, <code>TweenInfo</code>, <code>ColorSequence</code>, <code>NumberSequence</code>, and more than 25 in total, including <code>Vector2int16</code>, <code>Vector3int16</code>, <code>Region3int16</code>, <code>PhysicalProperties</code>, <code>Axes</code>, <code>Faces</code>, <code>PathWaypoint</code> and the curve-key types.</p>
+
+  <h3>Custom types</h3>
+  <p>A type the serializer does not know is registered once, before use. A codec declares a fixed <code>stride</code> in bytes and a pair of functions that write to and read from a buffer at a given offset.</p>
+<pre><code>local TypeCodecs = require(game.ReplicatedStorage.ParallelFlow.TypeCodecs)
+
+TypeCodecs.register("MyType", {
+    stride = 8,
+    encode = function(buffer, offset, value)
+        -- write `value` into `buffer` at `offset`, using `stride` bytes
+    end,
+    decode = function(buffer, offset)
+        -- read `stride` bytes from `buffer` at `offset` and return the value
+        return value
+    end,
+})</code></pre>
+  <p>Once registered, values of that type can appear anywhere in the data passed to a worker, the same as a built-in.</p>
+
+  <h3>SharedTable</h3>
+  <p>Above the configured thresholds, large or nested inputs are passed through a <code>SharedTable</code> rather than copied per chunk. This is automatic for <code>map</code>, and explicit for <code>mapInto</code>.</p>
+
+  <h2 id="benchmarks">Benchmarks</h2>
+  <p>Run on the server, in Studio, from the latest V19.1 measurement run. Times are in milliseconds; <code>Ratio</code> is relative to the sequential baseline (higher is faster). <code>pool:N</code> is a pool of N workers. <code>task.spawn</code> is a plain-coroutine baseline, included to show that raw coroutines do not parallelize CPU work. Each figure is the mean over 8 timed runs after 2 warmups.</p>
+  <p>These numbers were measured in Studio, which exposes more worker threads than a live game. The higher pool sizes shown here will not reach the same speedup in a published experience, where the engine's worker-thread count is the ceiling on parallelism regardless of <code>size</code>. Read the ratios as the upper end of what the workload can scale to, and see <a href="#notes">Notes and limits</a> for the constraint.</p>
+
+  <h3>Heavy compute (numbers)</h3>
+  <p>A numeric workload with real per-element cost. This is the case parallel execution is meant for, and where the pool scales close to linearly with the worker count.</p>
+  <div class="scroll">
+  <table class="num">
+    <caption>100 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>3.99</td><td>3.99</td><td>0.06</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>4.79</td><td>4.64</td><td>0.43</td><td>0.83x</td></tr>
+      <tr><td>pool:1</td><td>6.77</td><td>6.71</td><td>0.70</td><td>0.59x</td></tr>
+      <tr><td>pool:2</td><td>6.80</td><td>6.93</td><td>0.35</td><td>0.59x</td></tr>
+      <tr><td>pool:3</td><td>6.89</td><td>6.93</td><td>0.47</td><td>0.58x</td></tr>
+      <tr><td>pool:4</td><td>6.94</td><td>6.90</td><td>0.60</td><td>0.58x</td></tr>
+      <tr><td>pool:6</td><td>6.85</td><td>6.79</td><td>0.78</td><td>0.58x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>300 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>12.48</td><td>12.48</td><td>0.17</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>13.08</td><td>13.15</td><td>0.23</td><td>0.95x</td></tr>
+      <tr><td>pool:1</td><td>13.26</td><td>13.26</td><td>0.15</td><td>0.94x</td></tr>
+      <tr><td>pool:2</td><td>6.96</td><td>6.90</td><td>0.15</td><td>1.79x</td></tr>
+      <tr><td>pool:3</td><td>6.55</td><td>6.79</td><td>1.14</td><td>1.90x</td></tr>
+      <tr><td>pool:4</td><td>6.81</td><td>6.69</td><td>0.44</td><td>1.83x</td></tr>
+      <tr><td>pool:6</td><td>6.73</td><td>6.59</td><td>0.68</td><td>1.85x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>1000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>43.20</td><td>43.39</td><td>0.83</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>43.04</td><td>42.88</td><td>0.53</td><td>1.00x</td></tr>
+      <tr><td>pool:1</td><td>43.11</td><td>43.05</td><td>0.39</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>22.68</td><td>22.69</td><td>0.62</td><td>1.91x</td></tr>
+      <tr><td>pool:3</td><td>15.43</td><td>15.38</td><td>0.38</td><td>2.80x</td></tr>
+      <tr><td>pool:4</td><td>12.25</td><td>12.33</td><td>0.23</td><td>3.53x</td></tr>
+      <tr><td>pool:6</td><td>9.26</td><td>8.96</td><td>0.62</td><td>4.67x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>3000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>125.47</td><td>125.49</td><td>0.41</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>127.17</td><td>126.55</td><td>1.61</td><td>0.99x</td></tr>
+      <tr><td>pool:1</td><td>125.43</td><td>125.78</td><td>1.19</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>65.54</td><td>65.55</td><td>1.32</td><td>1.91x</td></tr>
+      <tr><td>pool:3</td><td>45.15</td><td>45.01</td><td>0.41</td><td>2.78x</td></tr>
+      <tr><td>pool:4</td><td>35.04</td><td>35.09</td><td>0.33</td><td>3.58x</td></tr>
+      <tr><td>pool:6</td><td>26.04</td><td>25.19</td><td>2.29</td><td>4.82x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Vector3 transform</h3>
+  <p>A lighter per-element workload through <code>mapVector3</code>. The compute is small, so small inputs sit at the round-trip floor and only larger ones pull ahead.</p>
+  <div class="scroll">
+  <table class="num">
+    <caption>100 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>1.01</td><td>1.00</td><td>0.02</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>1.18</td><td>1.14</td><td>0.09</td><td>0.85x</td></tr>
+      <tr><td>pool:2</td><td>6.82</td><td>6.90</td><td>0.43</td><td>0.15x</td></tr>
+      <tr><td>pool:4</td><td>6.75</td><td>6.91</td><td>0.48</td><td>0.15x</td></tr>
+      <tr><td>pool:6</td><td>6.94</td><td>6.96</td><td>0.25</td><td>0.14x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>1000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>10.89</td><td>10.83</td><td>0.32</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>11.38</td><td>11.34</td><td>0.37</td><td>0.96x</td></tr>
+      <tr><td>pool:2</td><td>6.57</td><td>6.28</td><td>0.80</td><td>1.66x</td></tr>
+      <tr><td>pool:4</td><td>6.82</td><td>6.94</td><td>0.57</td><td>1.60x</td></tr>
+      <tr><td>pool:6</td><td>6.77</td><td>7.00</td><td>0.70</td><td>1.61x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>3000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>31.41</td><td>31.45</td><td>0.48</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>34.07</td><td>34.05</td><td>0.67</td><td>0.92x</td></tr>
+      <tr><td>pool:2</td><td>16.95</td><td>16.98</td><td>0.16</td><td>1.85x</td></tr>
+      <tr><td>pool:3</td><td>12.05</td><td>12.13</td><td>0.28</td><td>2.61x</td></tr>
+      <tr><td>pool:4</td><td>9.59</td><td>9.61</td><td>0.26</td><td>3.28x</td></tr>
+      <tr><td>pool:6</td><td>7.54</td><td>7.58</td><td>0.25</td><td>4.17x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Nested table processing</h3>
+  <p>Each element is a nested table through <code>mapTables</code>, so serialization carries more weight. The speedup is real but lower than the flat numeric case.</p>
+  <div class="scroll">
+  <table class="num">
+    <caption>1000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>20.95</td><td>20.89</td><td>0.29</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>22.08</td><td>21.78</td><td>0.85</td><td>0.95x</td></tr>
+      <tr><td>pool:2</td><td>14.14</td><td>14.17</td><td>0.21</td><td>1.48x</td></tr>
+      <tr><td>pool:3</td><td>10.49</td><td>10.54</td><td>0.15</td><td>2.00x</td></tr>
+      <tr><td>pool:4</td><td>8.91</td><td>8.90</td><td>0.27</td><td>2.35x</td></tr>
+      <tr><td>pool:6</td><td>7.34</td><td>7.36</td><td>0.31</td><td>2.85x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>3000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>62.56</td><td>62.26</td><td>0.87</td><td>1.00x</td></tr>
+      <tr><td>task.spawn</td><td>65.71</td><td>65.76</td><td>0.98</td><td>0.95x</td></tr>
+      <tr><td>pool:2</td><td>40.91</td><td>40.89</td><td>0.49</td><td>1.53x</td></tr>
+      <tr><td>pool:3</td><td>30.16</td><td>30.19</td><td>0.35</td><td>2.07x</td></tr>
+      <tr><td>pool:4</td><td>25.83</td><td>25.52</td><td>0.96</td><td>2.42x</td></tr>
+      <tr><td>pool:6</td><td>20.49</td><td>20.55</td><td>0.51</td><td>3.05x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Crossover</h3>
+  <p>Sweeping the input size to find where the pools overtake sequential. Only the pool sizes that fit the client limit (1 to 3) are shown. Each cell is the mean time in milliseconds with its ratio to sequential in parentheses.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Dataset</th><th>sequential</th><th>pool:1</th><th>pool:2</th><th>pool:3</th></tr></thead>
+    <tbody>
+      <tr><td>50</td><td>2.00 (1.00x)</td><td>6.82 (0.29x)</td><td>6.94 (0.29x)</td><td>6.88 (0.29x)</td></tr>
+      <tr><td>100</td><td>4.12 (1.00x)</td><td>6.88 (0.60x)</td><td>6.74 (0.61x)</td><td>6.82 (0.60x)</td></tr>
+      <tr><td>200</td><td>8.60 (1.00x)</td><td>8.97 (0.96x)</td><td>6.76 (1.27x)</td><td>6.75 (1.27x)</td></tr>
+      <tr><td>500</td><td>21.59 (1.00x)</td><td>21.30 (1.01x)</td><td>11.32 (1.91x)</td><td>7.83 (2.76x)</td></tr>
+      <tr><td>1000</td><td>42.22 (1.00x)</td><td>43.96 (0.96x)</td><td>22.55 (1.87x)</td><td>15.68 (2.69x)</td></tr>
+      <tr><td>2000</td><td>83.45 (1.00x)</td><td>85.03 (0.98x)</td><td>43.79 (1.91x)</td><td>30.38 (2.75x)</td></tr>
+      <tr><td>5000</td><td>213.49 (1.00x)</td><td>211.58 (1.01x)</td><td>110.15 (1.94x)</td><td>75.08 (2.84x)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The pools cross sequential between 100 and 200 elements for this kernel: <code>pool:2</code> and <code>pool:3</code> turn positive at 200, while a single-worker pool never beats the plain loop because it pays the round trip without spreading work.</p>
+
+  <h3>Pool scaling (client limit)</h3>
+  <p>The same workload across pool sizes, marking which fit the 3-worker client limit and which are server only.</p>
+  <div class="scroll">
+  <table class="num">
+    <caption>300 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>12.68</td><td>12.68</td><td>0.00</td><td>1.00x</td></tr>
+      <tr><td>pool:1 (fits client)</td><td>13.49</td><td>13.42</td><td>0.41</td><td>0.94x</td></tr>
+      <tr><td>pool:2 (fits client)</td><td>6.89</td><td>6.93</td><td>0.20</td><td>1.84x</td></tr>
+      <tr><td>pool:3 (fits client)</td><td>7.01</td><td>7.06</td><td>0.83</td><td>1.81x</td></tr>
+      <tr><td>pool:4 (server only)</td><td>6.83</td><td>6.95</td><td>0.35</td><td>1.86x</td></tr>
+      <tr><td>pool:6 (server only)</td><td>6.82</td><td>7.06</td><td>0.58</td><td>1.86x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>1000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>41.70</td><td>41.70</td><td>0.00</td><td>1.00x</td></tr>
+      <tr><td>pool:1 (fits client)</td><td>42.77</td><td>42.69</td><td>0.70</td><td>0.98x</td></tr>
+      <tr><td>pool:2 (fits client)</td><td>22.40</td><td>22.44</td><td>0.32</td><td>1.86x</td></tr>
+      <tr><td>pool:3 (fits client)</td><td>15.65</td><td>15.69</td><td>0.18</td><td>2.66x</td></tr>
+      <tr><td>pool:4 (server only)</td><td>12.07</td><td>12.05</td><td>0.22</td><td>3.45x</td></tr>
+      <tr><td>pool:6 (server only)</td><td>9.42</td><td>9.39</td><td>0.31</td><td>4.43x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>3000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>124.99</td><td>124.99</td><td>0.00</td><td>1.00x</td></tr>
+      <tr><td>pool:1 (fits client)</td><td>126.69</td><td>126.96</td><td>1.26</td><td>0.99x</td></tr>
+      <tr><td>pool:2 (fits client)</td><td>65.78</td><td>65.35</td><td>1.38</td><td>1.90x</td></tr>
+      <tr><td>pool:3 (fits client)</td><td>46.05</td><td>46.00</td><td>0.63</td><td>2.71x</td></tr>
+      <tr><td>pool:4 (server only)</td><td>35.94</td><td>35.18</td><td>1.57</td><td>3.48x</td></tr>
+      <tr><td>pool:6 (server only)</td><td>25.42</td><td>25.27</td><td>0.39</td><td>4.92x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Heavy payload (SharedTable)</h3>
+  <p>Large nested tables routed through a <code>SharedTable</code>. The crossover sits higher because the per-element compute is modest relative to the data size.</p>
+  <div class="scroll">
+  <table class="num">
+    <caption>500 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>5.62</td><td>5.63</td><td>0.17</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>6.95</td><td>7.10</td><td>0.52</td><td>0.81x</td></tr>
+      <tr><td>pool:4</td><td>6.94</td><td>6.96</td><td>0.49</td><td>0.81x</td></tr>
+      <tr><td>pool:6</td><td>7.04</td><td>7.20</td><td>0.72</td><td>0.80x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>2000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>22.50</td><td>22.60</td><td>0.47</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>15.32</td><td>15.14</td><td>0.43</td><td>1.47x</td></tr>
+      <tr><td>pool:4</td><td>9.66</td><td>9.62</td><td>0.25</td><td>2.33x</td></tr>
+      <tr><td>pool:6</td><td>8.54</td><td>8.58</td><td>0.34</td><td>2.63x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Binary paths</h3>
+  <p>The binary APIs cross data as raw buffers rather than serialized tables. <code>mapBuffer</code> takes binary input and returns a list; <code>mapBufferOut</code> is binary on both ends with no serialization on the result.</p>
+  <div class="scroll">
+  <table class="num">
+    <caption>Vectorized buffer (mapBuffer), 5000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential (buffer)</td><td>208.51</td><td>208.32</td><td>2.40</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>110.13</td><td>110.07</td><td>1.51</td><td>1.89x</td></tr>
+      <tr><td>pool:4</td><td>57.04</td><td>57.00</td><td>0.37</td><td>3.66x</td></tr>
+      <tr><td>pool:6</td><td>42.26</td><td>41.14</td><td>2.87</td><td>4.93x</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table class="num">
+    <caption>Binary-to-binary pipeline (mapBufferOut), 5000 elements</caption>
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential (binary-io)</td><td>106.86</td><td>106.91</td><td>0.96</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>55.15</td><td>55.05</td><td>0.61</td><td>1.94x</td></tr>
+      <tr><td>pool:4</td><td>29.24</td><td>29.25</td><td>0.38</td><td>3.65x</td></tr>
+      <tr><td>pool:6</td><td>20.87</td><td>20.73</td><td>0.35</td><td>5.12x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Extreme stress (5000 elements, large payloads)</h3>
+  <p>5000 elements with heavy payloads. The high ratio comes from the sequential baseline being dominated by raw compute, which the pool spreads cleanly.</p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>212.08</td><td>211.85</td><td>1.68</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>57.96</td><td>57.98</td><td>0.74</td><td>3.66x</td></tr>
+      <tr><td>pool:4</td><td>41.80</td><td>41.79</td><td>1.50</td><td>5.07x</td></tr>
+      <tr><td>pool:6</td><td>37.87</td><td>37.39</td><td>1.09</td><td>5.60x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Mixed Roblox types (1000 elements)</h3>
+  <p>A mix of Roblox types going through TypeCodecs, confirming the codec layer adds no measurable overhead on a real workload.</p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential</td><td>29.70</td><td>29.78</td><td>0.83</td><td>1.00x</td></tr>
+      <tr><td>pool:2</td><td>15.78</td><td>15.80</td><td>0.25</td><td>1.88x</td></tr>
+      <tr><td>pool:4</td><td>8.87</td><td>8.75</td><td>0.33</td><td>3.35x</td></tr>
+      <tr><td>pool:6</td><td>7.00</td><td>6.92</td><td>0.44</td><td>4.24x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Many independent small jobs (N=100, pool:4)</h3>
+  <p>Comparing a serialized <code>dispatch</code> loop against <code>submit</code> with <code>awaitAll</code>. The dispatch loop pays one round trip per job; <code>submit</code> coalesces all jobs of a frame into roughly one round trip per worker.</p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th>Implementation</th><th>Avg</th><th>Med</th><th>SD</th><th>Ratio</th></tr></thead>
+    <tbody>
+      <tr><td>sequential (main thread)</td><td>16.47</td><td>16.51</td><td>0.28</td><td>1.00x</td></tr>
+      <tr><td>dispatch loop (serialized)</td><td>201.23</td><td>174.86</td><td>52.72</td><td>0.08x</td></tr>
+      <tr><td>submit + awaitAll (coalesced)</td><td>8.85</td><td>6.85</td><td>3.90</td><td>1.86x</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Functional checks</h3>
+  <p>Not timing tables; these confirm behavior under the same run.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Ergonomic <code>Map()</code> over 10000 items</td><td>processed in 117.50 ms</td></tr>
+      <tr><td>Frame budgeting (2 ms budget)</td><td>213.52 ms total; yielded across frames to hold the budget (PASS)</td></tr>
+      <tr><td>Task cancellation</td><td>task settled; pool healthy afterward</td></tr>
+      <tr><td>Dispatch after <code>destroy</code></td><td>raises "pool is destroyed" as expected</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="notes">Notes and limits</h2>
+  <ul>
+    <li>Parallelism is bounded by the engine, not by <code>size</code>. <code>size</code> sets how many worker Actors the pool creates, but Roblox decides how many run at once by scheduling Actors across a small pool of worker threads. That thread count is environment-dependent and not guaranteed: it has differed between Studio and live games and has changed over time. At the time of writing it is roughly 8 in Studio and lower in a published experience (around 3 on the client and about 2 on the server), and Roblox has indicated it may instead scale with CPU cores in the future. Creating more Actors than there are worker threads does not raise this ceiling, so a large <code>size</code> mainly helps in Studio and on higher-core machines; treat these figures as current behavior, not a contract.</li>
+    <li>A single large monolithic payload does not benefit much from chunking: the transfer cost dominates and there is little compute to spread. This is a property of the actor model, not a defect.</li>
+    <li>The small-input latency floor is roughly one round trip on the test machine. Below the crossover point the adaptive scheduler runs the work sequentially, so a small input is not penalized by the floor.</li>
+    <li>The distributed package is the runtime only. The demos and benchmark scripts live in the repository, not in the package.</li>
+  </ul>
+
+  <footer>
+    MIT licensed. Nimbus Parallel Flow V20, by @nnoveil, Nimbus Systems, 2026.
+  </footer>
+
+</main>
+</div>
+</body>
+</html>
